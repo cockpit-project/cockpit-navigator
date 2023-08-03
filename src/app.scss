@@ -2,6 +2,8 @@
 @use "ct-card.scss";
 @use "@patternfly/patternfly/utilities/Text/text.css";
 
+@import "@patternfly/patternfly/components/Button/button.css";
+
 /* Style the list cards as ct-cards */
 .pf-c-page__main-section > .pf-c-card {
     @extend .ct-card;
@@ -20,6 +22,7 @@
 }
 
 .grid-file-name {
+    text-align: center;
     width: 10em;
 }
 
@@ -39,4 +42,8 @@
 
 #description-list-sidebar {
     margin-bottom: 1rem;
+}
+
+.item-button {
+    color: var(--pf-v5-global--Color--200);
 }

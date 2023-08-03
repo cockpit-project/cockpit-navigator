@@ -21,13 +21,12 @@ import cockpit from "cockpit";
 import { useDialogs } from "dialogs.jsx";
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import {
-    Button,
     Card, CardBody,
     Flex, FlexItem,
     Icon,
     MenuItem, MenuList,
     Page, PageSection,
-    Sidebar, SidebarPanel, SidebarContent, Truncate,
+    Sidebar, SidebarPanel, SidebarContent, Truncate, CardHeader, CardTitle,
 } from "@patternfly/react-core";
 import { FileIcon, FolderIcon } from "@patternfly/react-icons";
 
@@ -271,8 +270,9 @@ const NavigatorCardBody = ({ currentFilter, files, isGrid, path, sortBy, selecte
     };
 
     const resetSelected = e => {
-        if (e.target.id === "folder-view" || e.target.id === "navigator-card-body")
+        if (e.target.id === "folder-view" || e.target.id === "navigator-card-body") {
             setSelected(path[path.length - 1]);
+        }
     };
 
     const filteredItems = files
@@ -305,24 +305,41 @@ const NavigatorCardBody = ({ currentFilter, files, isGrid, path, sortBy, selecte
 
     const Item = ({ file }) => {
         return (
-            <Button
-              data-item={file.name} variant="plain"
-              onDoubleClick={() => onDoubleClickNavigate(path, file)} onClick={() => setSelected(file)}
-              onContextMenu={(e) => { e.stopPropagation(); setSelectedContext(file) }} className={"item-button " + (file.type === "directory" ? "directory-item" : "file-item")}
+            <Card
+              isClickable isCompact
+              isPlain isRounded
+              onContextMenu={(e) => { e.stopPropagation(); setSelectedContext(file) }}
+              onDoubleClick={() => onDoubleClickNavigate(path, file)}
+              onClick={() => { console.info("selected", file); setSelected(file) }}
+              id={"card-item-" + file.name + file.type}
+              isSelected={selected?.name === file.name}
             >
-                <Flex direction={{ default: isGrid ? "column" : "row" }} spaceItems={{ default: isGrid ? "spaceItemsNone" : "spaceItemsMd" }}>
-                    <FlexItem alignSelf={{ default: "alignSelfCenter" }}>
-                        <Icon size={isGrid ? "xl" : "lg"} isInline>
-                            {file.type === "directory" || file.to === "directory"
-                                ? <FolderIcon />
-                                : <FileIcon />}
-                        </Icon>
-                    </FlexItem>
-                    <FlexItem className={"pf-u-text-break-word pf-u-text-wrap" + (isGrid ? " grid-file-name" : "")}>
-                        {selected?.name !== file.name ? <Truncate content={file.name} position="middle" /> : file.name}
-                    </FlexItem>
-                </Flex>
-            </Button>
+                <CardHeader
+                  selectableActions={{
+                      name: file.name,
+                      selectableActionAriaLabelledby: "card-item-" + file.name + file.type,
+                      selectableActionId: "card-item-" + file.name + file.type + "-selectable-action",
+                  }}
+                >
+                    <CardTitle
+                      data-item={file.name}
+                      className={"item-button " + (file.type === "directory" ? "directory-item" : "file-item")}
+                    >
+                        <Flex direction={{ default: isGrid ? "column" : "row" }} spaceItems={{ default: isGrid ? "spaceItemsNone" : "spaceItemsMd" }}>
+                            <FlexItem alignSelf={{ default: "alignSelfCenter" }}>
+                                <Icon size={isGrid ? "xl" : "lg"} isInline>
+                                    {file.type === "directory" || file.to === "directory"
+                                        ? <FolderIcon />
+                                        : <FileIcon />}
+                                </Icon>
+                            </FlexItem>
+                            <FlexItem className={"pf-u-text-break-word pf-u-text-wrap" + (isGrid ? " grid-file-name" : "")}>
+                                {selected?.name !== file.name ? <Truncate content={file.name} position="middle" /> : file.name}
+                            </FlexItem>
+                        </Flex>
+                    </CardTitle>
+                </CardHeader>
+            </Card>
         );
     };
 

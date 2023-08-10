@@ -19,7 +19,7 @@
 
 import cockpit from "cockpit";
 import { useDialogs } from "dialogs.jsx";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import {
     Button,
     Card, CardBody,
@@ -43,11 +43,12 @@ const _ = cockpit.gettext;
 export const Application = () => {
     const Dialogs = useDialogs();
     const [currentFilter, setCurrentFilter] = useState("");
-    const [files, setFiles] = useState([]);
+    const [files, setFiles] = useState();
     const [isGrid, setIsGrid] = useState(true);
     const [path, setPath] = useState(undefined);
     const [sortBy, setSortBy] = useState(localStorage.getItem("cockpit-navigator.sort") || "az");
     const channel = useRef(null);
+    const channelList = useRef(null);
     const [selected, setSelected] = useState(null);
     const [selectedContext, setSelectedContext] = useState(null);
     const [showHidden, setShowHidden] = useState(false);
@@ -64,29 +65,34 @@ export const Application = () => {
         });
     }, []);
 
-    useEffect(() => {
-        if (path === undefined)
-            return;
+    const getFsList = useCallback(() => {
+        const _files = [];
+        let processingFilesCnt = 0;
+        let fslistFinished = false;
+        const currentPath = path.join("/");
 
-        setSelected(path[path.length - 1]);
+        const watchFiles = () => {
+            if (path === undefined)
+                return;
 
-        const getFsList = () => {
+            const currentPath = path.join("/");
+
             if (channel.current !== null)
                 channel.current.close();
 
-            const currentPath = path.join("/");
             channel.current = cockpit.channel({
-                payload: "fslist1",
+                payload: "fswatch1",
                 path: `/${currentPath}`,
                 superuser: "try",
-                watch: true,
             });
 
-            const files = [];
             channel.current.addEventListener("message", (ev, data) => {
                 const item = JSON.parse(data);
+
+                item.isHidden = item.path.startsWith(".");
+
                 if (item.event === "present") {
-                    files.push({ ...item, name: item.path, isHidden: item.path.startsWith(".") });
+                    setFiles(_files => [..._files, item]);
                 } else {
                     const name = item.path.slice(item.path.lastIndexOf("/") + 1);
                     if (item.event === "deleted") {
@@ -102,34 +108,70 @@ export const Application = () => {
                     }
                 }
             });
+        };
 
-            channel.current.addEventListener("ready", () => {
-                Promise.all(files.map(file => {
-                    return cockpit.spawn(["stat", "-c", "%a", "/" + path.join("/") + "/" + file.path], { superuser: "try" }).then(res => {
-                        // trim newline character
+        if (channelList.current !== null)
+            channelList.current.close();
+
+        channelList.current = cockpit.channel({
+            payload: "fslist1",
+            path: `/${currentPath}`,
+            superuser: "try",
+            watch: false,
+        });
+
+        channelList.current.addEventListener("message", (ev, data) => {
+            processingFilesCnt = processingFilesCnt + 1;
+
+            const file = JSON.parse(data);
+            const filePath = path.join("/") + "/" + file.path;
+
+            return cockpit.spawn(["stat", "-c", "%a", filePath], { superuser: "try", error: "message" })
+                    .then(res => {
+                    // trim newline character
                         res = res.slice(0, -1);
                         // trim sticky bit
                         if (res.length === 4) res = res.slice(1);
                         if (res.length === 1) res = "00".concat(res);
                         if (res.length === 2) res = "0".concat(res);
-                        return { ...file, permissions: res };
-                    });
-                })).then(res => {
-                    Promise.all(res.map(file => {
-                        return cockpit.spawn(["file", "/" + path.join("/") + "/" + file.path], { superuser: "try" }).then(res => {
-                            return { ...file, info: res.split(":")[1].slice(0, -1) };
-                        });
-                    })).then(res => setFiles(res));
-                });
-            });
-        };
-        getFsList();
+                        file.permissions = res;
+
+                        return cockpit.spawn(["date", "-r", filePath], { superuser: "try", error: "message" });
+                    })
+                    .then(res => { file.modified = res })
+                    .then(() => cockpit.spawn(["file", filePath], { superuser: "try", error: "message" }))
+                    .then(res => {
+                        file.info = res.split(":")[1].slice(0, -1);
+                    })
+                    .then(() => {
+                        _files.push({ ...file, name: file.path, isHidden: file.path.startsWith(".") });
+                    })
+                    .always(() => {
+                        processingFilesCnt = processingFilesCnt - 1;
+                        if (processingFilesCnt === 0 && fslistFinished) {
+                            setFiles(_files);
+                            watchFiles();
+                        }
+                    }, exc => console.error("Adding file failed", file, exc));
+        });
+
+        channelList.current.addEventListener("close", () => {
+            fslistFinished = true;
+        });
     }, [path]);
 
-    if (!path)
+    useEffect(() => {
+        if (path === undefined)
+            return;
+
+        setSelected(path[path.length - 1]);
+        getFsList();
+    }, [path, getFsList]);
+
+    if (!path || files === undefined)
         return null;
 
-    const visibleFiles = !showHidden ? files.filter(file => !file.name.startsWith(".")) : files;
+    const visibleFiles = !showHidden ? files.filter(file => !file.isHidden) : files;
 
     const contextMenuItems = (
         <MenuList>
@@ -157,6 +199,17 @@ export const Application = () => {
         </MenuList>
     );
 
+    const selectedItem = (
+        files.find(file => file.name === selected?.name) ||
+        ({
+            name: path[path.length - 1],
+            items_cnt: {
+                all: files.length,
+                hidden: files.length - visibleFiles.length
+            }
+        })
+    );
+
     return (
         <Page>
             <NavigatorBreadcrumbs
@@ -168,7 +221,7 @@ export const Application = () => {
                 <Sidebar isPanelRight hasGutter>
                     <SidebarPanel className="sidebar-panel" width={{ default: "width_25" }}>
                         <SidebarPanelDetails
-                          path={path} selected={(files.find(file => file.name === selected?.name)) || ({ name: path[path.length - 1], items_cnt: { all: files.length, hidden: files.length - files.filter(file => !file.name.startsWith(".")).length } })}
+                          path={path} selected={selectedItem}
                           setPath={setPath} showHidden={showHidden}
                           setShowHidden={setShowHidden} setHistory={setHistory}
                           setHistoryIndex={setHistoryIndex} files={files}

@@ -19,7 +19,7 @@
 
 import cockpit from "cockpit";
 import { useDialogs } from "dialogs.jsx";
-import React, { useCallback, useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
     Card, CardBody,
     Flex, FlexItem,
@@ -258,7 +258,66 @@ export const Application = () => {
     );
 };
 
+const compare = (sortBy) => {
+    const compareFileType = (a, b) => {
+        if (a.type === "directory" && b.type !== "directory")
+            return -1;
+        if (a.type !== "directory" && b.type === "directory")
+            return 1;
+        return 0;
+    };
+
+    switch (sortBy) {
+    case "az":
+        return (a, b) => compareFileType(a, b) === 0 ? (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1) : compareFileType(a, b);
+    case "za":
+        return (a, b) => compareFileType(a, b) === 0 ? (a.name.toLowerCase() > b.name.toLowerCase() ? -1 : 1) : compareFileType(a, b);
+    case "last_modified":
+        return (a, b) => compareFileType(a, b) === 0 ? (a.modified > b.modified ? -1 : 1) : compareFileType(a, b);
+    case "first_modified":
+        return (a, b) => compareFileType(a, b) === 0 ? (a.modified < b.modified ? -1 : 1) : compareFileType(a, b);
+    default:
+        break;
+    }
+};
+
 const NavigatorCardBody = ({ currentFilter, files, isGrid, path, sortBy, selected, setSelected, setSelectedContext, setHistory, historyIndex, setHistoryIndex }) => {
+    const sortedFiles = useMemo(() => {
+        const compareFunc = compare(sortBy);
+
+        return files
+                .filter(file => {
+                    return file.name.toLowerCase().includes(currentFilter.toLowerCase());
+                })
+                .sort(compareFunc);
+    }, [files, currentFilter, sortBy]);
+    const isMounted = useRef(null);
+
+    useEffect(() => {
+        const onKeyboardNav = (e) => {
+            if (e.key === "ArrowRight") {
+                setSelected(_selected => {
+                    const selectedIdx = sortedFiles?.findIndex(file => file.name === _selected?.name);
+                    const newIdx = selectedIdx < sortedFiles.length - 1 ? selectedIdx + 1 : 0;
+
+                    return sortedFiles[newIdx];
+                });
+            } else if (e.key === "ArrowLeft") {
+                setSelected(_selected => {
+                    const selectedIdx = sortedFiles?.findIndex(file => file.name === _selected?.name);
+                    const newIdx = selectedIdx > 0 ? selectedIdx - 1 : sortedFiles.length - 1;
+
+                    return sortedFiles[newIdx];
+                });
+            }
+        };
+
+        if (!isMounted.current) {
+            isMounted.current = true;
+            document.addEventListener("keydown", onKeyboardNav);
+        }
+    }, [setSelected, sortedFiles]);
+
     const onDoubleClickNavigate = (path, file) => {
         const newPath = [...path, file.name].join("/");
         if (file.type === "directory" || file.to === "directory") {
@@ -275,34 +334,6 @@ const NavigatorCardBody = ({ currentFilter, files, isGrid, path, sortBy, selecte
         }
     };
 
-    const filteredItems = files
-            .filter(file => {
-                return file.name.toLowerCase().includes(currentFilter.toLowerCase());
-            });
-
-    let compare;
-    switch (sortBy) {
-    case "az":
-        compare = (a, b) => a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1;
-        break;
-    case "za":
-        compare = (a, b) => a.name.toLowerCase() > b.name.toLowerCase() ? -1 : 1;
-        break;
-    case "last_modified":
-        compare = (a, b) => a.modified > b.modified ? -1 : 1;
-        break;
-    case "first_modified":
-        compare = (a, b) => a.modified < b.modified ? -1 : 1;
-        break;
-    default:
-        break;
-    }
-
-    const filteredFolders = filteredItems.filter((item) => (item.type === "directory"));
-    // filtered files can be files, links or special files
-    const filteredFiles = filteredItems.filter((item) => (item.type !== "directory"));
-    const sortedFiles = filteredFolders.sort(compare).concat(filteredFiles.sort(compare));
-
     const Item = ({ file }) => {
         return (
             <Card
@@ -310,7 +341,7 @@ const NavigatorCardBody = ({ currentFilter, files, isGrid, path, sortBy, selecte
               isPlain isRounded
               onContextMenu={(e) => { e.stopPropagation(); setSelectedContext(file) }}
               onDoubleClick={() => onDoubleClickNavigate(path, file)}
-              onClick={() => { console.info("selected", file); setSelected(file) }}
+              onClick={() => setSelected(file)}
               id={"card-item-" + file.name + file.type}
               isSelected={selected?.name === file.name}
             >

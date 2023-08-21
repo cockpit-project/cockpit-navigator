@@ -56,7 +56,7 @@ import { permissions } from "./common.js";
 
 const _ = cockpit.gettext;
 
-export const SidebarPanelDetails = ({ selected, path, setPath, showHidden, setShowHidden, setHistory, setHistoryIndex, files }) => {
+export const SidebarPanelDetails = ({ selected, path, setPath, showHidden, setShowHidden, setHistory, setHistoryIndex, files, setIsEditing }) => {
     const [info, setInfo] = useState(null);
 
     useEffect(() => {
@@ -95,6 +95,7 @@ export const SidebarPanelDetails = ({ selected, path, setPath, showHidden, setSh
                   setPath={setPath} showHidden={showHidden}
                   setShowHidden={setShowHidden} setHistory={setHistory}
                   setHistoryIndex={setHistoryIndex} files={files}
+                  setIsEditing={setIsEditing}
                 />
             </CardHeader>
             {selected.items_cnt === undefined &&
@@ -136,7 +137,7 @@ export const SidebarPanelDetails = ({ selected, path, setPath, showHidden, setSh
     );
 };
 
-const DropdownWithKebab = ({ selected, path, showHidden, setShowHidden, setHistory, setHistoryIndex, files }) => {
+const DropdownWithKebab = ({ selected, path, showHidden, setShowHidden, setHistory, setHistoryIndex, files, setIsEditing }) => {
     const Dialogs = useDialogs();
     const [isOpen, setIsOpen] = useState(false);
 
@@ -187,6 +188,13 @@ const DropdownWithKebab = ({ selected, path, showHidden, setShowHidden, setHisto
                         {_("Create directory")}
                     </DropdownItem>
                 </>}
+                {selected.type === "file" &&
+                <DropdownItem
+                  id="edit-file" key="edit-file"
+                  onClick={() => { setIsEditing(true) }}
+                >
+                    {_("Edit file")}
+                </DropdownItem>}
                 <DropdownItem
                   id="create-link" key="create-link"
                   onClick={() => { createLink(Dialogs, currentDirectory, files) }}

@@ -86,6 +86,11 @@ export const spawnCreateDirectory = (o) => {
             .then(o.Dialogs.close, err => o.setErrorMessage(err.message));
 };
 
+export const spawnCreateFile = (o) => {
+    cockpit.spawn(["touch", o.currentPath + o.name], options)
+            .then(o.Dialogs.close, err => o.setErrorMessage(err.message));
+};
+
 export const spawnCreateLink = (o) => {
     cockpit.spawn([
         "ln",

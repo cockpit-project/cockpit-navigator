@@ -40,6 +40,12 @@ class TestNavigator(testlib.MachineCase):
         b.set_input_text("#create-directory-input", f"{filename}")
         b.click("button.pf-m-primary")
 
+    def create_file(self, b, filename):
+        b.click("#dropdown-menu")
+        b.click("#create-file")
+        b.set_input_text("#create-file-input", f"{filename}")
+        b.click("button.pf-m-primary")
+
     def wait_modal_inline_alert(self, b, msg):
         b.wait_in_text("h4.pf-v5-c-alert__title", msg)
 
@@ -364,7 +370,7 @@ class TestNavigator(testlib.MachineCase):
         b.wait_in_text("#sidebar-card-header", "admin")
         b.wait_not_present("[data-item='newdir']")
 
-    def testCreate(self):
+    def testCreateDirectory(self):
         b = self.browser
         m = self.machine
 
@@ -396,6 +402,39 @@ class TestNavigator(testlib.MachineCase):
         b.click(".breadcrumb-button:nth-of-type(3)")
         m.execute("sudo chattr -i /home/admin/newdir")
 
+    def testCreateFile(self):
+        b = self.browser
+        m = self.machine
+
+        self.restore_dir("/home/admin")
+
+        self.enter_navigator()
+
+        # Create file
+        self.create_file(b, "newfile")
+        b.wait_visible("[data-item='newfile']")
+
+        # Creating file with duplicate name should return an error
+        self.create_file(b, "newfile")
+        self.wait_modal_inline_alert(b, "A file with that name already exists")
+        b.click("div.pf-v5-c-modal-box__close button.pf-v5-c-button")
+
+        # Creating file with empty name should return an error
+        self.create_file(b, "")
+        self.wait_modal_inline_alert(b, "File name not provided")
+        b.click("div.pf-v5-c-modal-box__close button.pf-v5-c-button")
+
+        # Creating file inside protected folder should return an error
+        m.execute("mkdir /home/admin/newdir")
+        m.execute("sudo chattr +i /home/admin/newdir")
+        b.mouse("[data-item='newdir']", "dblclick")
+        b.wait_not_present("[data-item='newdir']")
+        self.create_file(b, "test")
+        self.wait_modal_inline_alert(b, "touch: cannot touch '/home/admin/newdir/test': Operation not permitted")
+        b.click("div.pf-v5-c-modal-box__close button.pf-v5-c-button")
+        b.click(".breadcrumb-button:nth-of-type(3)")
+        m.execute("sudo chattr -i /home/admin/newdir")
+
     def testContextMenu(self):
         b = self.browser
         m = self.machine
@@ -404,9 +443,17 @@ class TestNavigator(testlib.MachineCase):
 
         self.enter_navigator()
 
+        # Create file from context menu
+        b.mouse("#folder-view", "contextmenu")
+        b.wait_in_text(".context-menu li:nth-child(1) button", "Create file")
+        b.click(".context-menu button:contains('Create file')")
+        b.set_input_text("#create-file-input", "newfile")
+        b.click("button.pf-m-primary")
+        b.wait_visible("[data-item='newfile']")
+
         # Create folder from context menu
         b.mouse("#folder-view", "contextmenu")
-        b.wait_in_text(".context-menu li:nth-child(1) button", "Create directory")
+        b.wait_in_text(".context-menu li:nth-child(2) button", "Create directory")
         b.click(".context-menu button:contains('Create directory')")
         b.set_input_text("#create-directory-input", "newdir")
         b.click("button.pf-m-primary")

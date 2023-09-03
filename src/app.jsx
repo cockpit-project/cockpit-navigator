@@ -35,7 +35,9 @@ import { ListingTable } from "cockpit-components-table.jsx";
 import { EmptyStatePanel } from "cockpit-components-empty-state.jsx";
 import { ContextMenu } from "./navigatorContextMenu.jsx";
 import { NavigatorBreadcrumbs } from "./navigatorBreadcrumbs.jsx";
-import { createDirectory, createLink, deleteItem, editPermissions, renameItem, updateFile } from "./fileActions.jsx";
+import {
+    createDirectory, createFile, createLink, deleteItem, editPermissions, renameItem, updateFile
+} from "./fileActions.jsx";
 import { SidebarPanelDetails } from "./sidebar.jsx";
 import { NavigatorCardHeader } from "./header.jsx";
 import { usePageLocation } from "hooks.js";
@@ -175,6 +177,9 @@ export const Application = () => {
     const _createDirectory = () => {
         createDirectory(Dialogs, "/" + path.join("/") + "/", selectedContext || selected);
     };
+    const _createFile = () => {
+        createFile(Dialogs, "/" + path.join("/") + "/", files);
+    };
     const _createLink = () => {
         createLink(Dialogs, "/" + path.join("/") + "/", files, selectedContext);
     };
@@ -201,6 +206,7 @@ export const Application = () => {
             {
             ...(!selectedContext
                 ? [
+                    { title: _("Create file"), onClick: _createFile },
                     { title: _("Create directory"), onClick: _createDirectory },
                     { title: _("Create link"), onClick: _createLink },
                     { type: "divider" },

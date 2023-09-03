@@ -41,6 +41,7 @@ import {
 import { FileAutoComplete } from "../pkg/lib/cockpit-components-file-autocomplete";
 import {
     spawnCreateDirectory,
+    spawnCreateFile,
     spawnCreateLink,
     spawnDeleteItem,
     spawnEditPermissions,
@@ -64,6 +65,14 @@ export const createLink = (Dialogs, currentPath, files, selected) => {
               : ((b.name.toLowerCase() > a.name.toLowerCase())
                   ? -1
                   : 0))}
+        />
+    );
+};
+
+export const createFile = (Dialogs, currentPath, files) => {
+    Dialogs.show(
+        <CreateFileModal
+          files={files} currentPath={currentPath}
         />
     );
 };
@@ -226,6 +235,52 @@ export const CreateDirectoryModal = ({ selected, currentPath }) => {
                         <TextInput
                           value={name} onChange={(_, val) => setName(val)}
                           id="create-directory-input"
+                        />
+                    </FormGroup>
+                </Form>
+            </Stack>
+        </Modal>
+    );
+};
+
+export const CreateFileModal = ({ files, currentPath }) => {
+    const Dialogs = useDialogs();
+    const [name, setName] = useState("");
+    const [errorMessage, setErrorMessage] = useState(undefined);
+    const createFile = () => {
+        if (name.trim() === "")
+            setErrorMessage("File name not provided");
+        else if (files.find(f => f.name === name))
+            setErrorMessage("A file with that name already exists");
+        else
+            spawnCreateFile({ Dialogs, currentPath, name, setErrorMessage });
+    };
+
+    return (
+        <Modal
+          position="top"
+          title={_("Create file")}
+          isOpen
+          onClose={Dialogs.close}
+          footer={
+              <>
+                  <Button variant="primary" onClick={createFile}>{_("Create")}</Button>
+                  <Button variant="link" onClick={Dialogs.close}>{_("Cancel")}</Button>
+              </>
+          }
+        >
+            <Stack>
+                {errorMessage !== undefined &&
+                <InlineNotification
+                  type="danger"
+                  text={errorMessage}
+                  isInline
+                />}
+                <Form isHorizontal>
+                    <FormGroup label={_("File name")}>
+                        <TextInput
+                          value={name} onChange={(_, val) => setName(val)}
+                          id="create-file-input"
                         />
                     </FormGroup>
                 </Form>

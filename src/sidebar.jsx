@@ -52,7 +52,7 @@ import {
 import * as timeformat from "timeformat";
 import { useDialogs } from "dialogs.jsx";
 
-import { createDirectory, createLink, deleteItem, editPermissions, renameItem } from "./fileActions.jsx";
+import { createDirectory, createFile, createLink, deleteItem, editPermissions, renameItem } from "./fileActions.jsx";
 import { permissions } from "./common.js";
 
 const _ = cockpit.gettext;
@@ -249,12 +249,20 @@ const DropdownWithKebab = ({ selected, path, showHidden, setShowHidden, setHisto
                 </DropdownItem>
                 <Divider />
                 {selected.items_cnt &&
-                <DropdownItem
-                  id="create-item" key="create-item"
-                  onClick={() => { createDirectory(Dialogs, currentDirectory, selected) }}
-                >
-                    {_("Create directory")}
-                </DropdownItem>}
+                <>
+                    <DropdownItem
+                      id="create-file" key="create-file"
+                      onClick={() => { createFile(Dialogs, currentDirectory, files) }}
+                    >
+                        {_("Create file")}
+                    </DropdownItem>
+                    <DropdownItem
+                      id="create-item" key="create-item"
+                      onClick={() => { createDirectory(Dialogs, currentDirectory, selected) }}
+                    >
+                        {_("Create directory")}
+                    </DropdownItem>
+                </>}
                 <DropdownItem
                   id="create-link" key="create-link"
                   onClick={() => { createLink(Dialogs, currentDirectory, files) }}

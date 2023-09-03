@@ -39,6 +39,7 @@ import { createDirectory, createLink, deleteItem, editPermissions, renameItem, u
 import { SidebarPanelDetails } from "./sidebar.jsx";
 import { NavigatorCardHeader } from "./header.jsx";
 import { usePageLocation } from "hooks.js";
+import { spawnDuplicateItem } from "./apis/spawnHelpers.jsx";
 
 const _ = cockpit.gettext;
 
@@ -184,6 +185,9 @@ export const Application = () => {
     const _editProperties = () => {
         editPermissions(Dialogs, { selected: selectedContext, path });
     };
+    const _duplicateItem = () => {
+        spawnDuplicateItem("/" + path.join("/") + "/", selectedContext.name);
+    };
     const _deleteItem = () => {
         deleteItem(
             Dialogs,
@@ -210,6 +214,7 @@ export const Application = () => {
                     { title: _("Edit properties"), onClick: _editProperties },
                     { title: cockpit.format(_("Rename $0"), selectedContext?.type), onClick: _renameItem },
                     { type: "divider" },
+                    { title: cockpit.format(_("Duplicate $0"), selectedContext?.type), onClick: _duplicateItem },
                     { title: _("Create link"), onClick: _createLink },
                     { type: "divider" },
                     {

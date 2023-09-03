@@ -134,3 +134,12 @@ export const spawnEditPermissions = (o) => {
             })
             .then(o.Dialogs.close, err => o.setErrorMessage(err.message));
 };
+
+export const spawnDuplicateItem = (path, name) => {
+    cockpit.spawn([
+        "cp",
+        "-r",
+        path + name,
+        path + name + " - Copy"
+    ]);
+};

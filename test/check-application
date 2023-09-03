@@ -412,6 +412,19 @@ class TestNavigator(testlib.MachineCase):
         b.click("button.pf-m-primary")
         b.wait_visible("[data-item='newdir']")
 
+        # Duplicate folder from context menu
+        b.mouse("[data-item='newdir']", "contextmenu")
+        b.wait_in_text(".context-menu li:nth-child(4) button", "Duplicate directory")
+        b.click(".context-menu button:contains('Duplicate directory')")
+        b.wait_visible("[data-item='newdir - Copy']")
+
+        # Duplicate file from context menu
+        m.execute("touch /home/admin/newfile")
+        b.mouse("[data-item='newfile']", "contextmenu")
+        b.wait_in_text(".context-menu li:nth-child(4) button", "Duplicate file")
+        b.click(".context-menu button:contains('Duplicate file')")
+        b.wait_visible("[data-item='newfile - Copy']")
+
         # Opening context menu from empty space deselects item
         b.click("[data-item='newdir']")
         b.mouse("#folder-view", "contextmenu")
@@ -440,7 +453,7 @@ class TestNavigator(testlib.MachineCase):
 
         # Delete folder from context menu
         b.mouse("[data-item='newdir1']", "contextmenu")
-        b.wait_in_text(".context-menu li:nth-child(6) button", "Delete directory")
+        b.wait_in_text(".context-menu li:nth-child(7) button", "Delete directory")
         b.click(".context-menu button:contains('Delete directory')")
         b.click("button.pf-m-danger")
         b.wait_not_present("[data-item='newdir1']")
@@ -448,17 +461,56 @@ class TestNavigator(testlib.MachineCase):
         # Check file name is pre-selected when creating link
         m.execute("touch /home/admin/newfile")
         b.mouse("[data-item='newfile']", "contextmenu")
-        b.wait_in_text(".context-menu li:nth-child(4) button", "Create link")
+        b.wait_in_text(".context-menu li:nth-child(5) button", "Create link")
         b.click(".context-menu button:contains('Create link')")
         b.wait_val("#create-link-original-wrapper input", "/home/admin/newfile")
         b.click("button.pf-m-link:contains('Cancel')")
 
         # Delete button text should match item type: directory/file
         b.mouse("[data-item='newfile']", "contextmenu")
-        b.wait_in_text(".context-menu li:nth-child(6) button", "Delete file")
+        b.wait_in_text(".context-menu li:nth-child(7) button", "Delete file")
         b.click(".context-menu button:contains('Delete file')")
         b.click("button.pf-m-danger")
         b.wait_not_present("[data-item='newfile']")
+
+    def testDuplicate(self):
+        b = self.browser
+        m = self.machine
+
+        self.restore_dir("/home/admin")
+
+        self.enter_navigator()
+
+        # Create folder and file
+        m.execute("mkdir /home/admin/newdir")
+        m.execute("touch /home/admin/newfile")
+        b.wait_visible("[data-item='newdir']")
+        b.wait_visible("[data-item='newfile']")
+
+        # Duplicate folder
+        b.click("[data-item='newdir']")
+        b.click("#dropdown-menu")
+        b.click("#duplicate-item")
+        b.wait_visible("[data-item='newdir - Copy']")
+
+        # Duplicate file
+        b.click("[data-item='newfile']")
+        b.click("#dropdown-menu")
+        b.click("#duplicate-item")
+        b.wait_visible("[data-item='newfile - Copy']")
+
+        # Duplicating item inside protected folder should return an error
+        m.execute("touch /home/admin/newdir/test")
+        m.execute("sudo chattr +i /home/admin/newdir")
+        b.mouse("[data-item='newdir']", "dblclick")
+        b.wait_not_present("[data-item='newdir']")
+        b.click("[data-item='test']")
+        b.click("#dropdown-menu")
+        b.click("#duplicate-item")
+        b.wait_not_present("[data-item='newfile - Copy']")
+        # Check error here once it is shown in the page
+        b.click(".breadcrumb-button:nth-of-type(3)")
+        m.execute("sudo chattr -i /home/admin/newdir")
 
     def testRename(self):
         b = self.browser

@@ -54,6 +54,7 @@ import { useDialogs } from "dialogs.jsx";
 
 import { createDirectory, createLink, deleteItem, editPermissions, renameItem } from "./fileActions.jsx";
 import { permissions } from "./common.js";
+import { spawnDuplicateItem } from "./apis/spawnHelpers.jsx";
 
 const _ = cockpit.gettext;
 
@@ -254,6 +255,13 @@ const DropdownWithKebab = ({ selected, path, showHidden, setShowHidden, setHisto
                   onClick={() => { createDirectory(Dialogs, currentDirectory, selected) }}
                 >
                     {_("Create directory")}
+                </DropdownItem>}
+                {!selected.items_cnt &&
+                <DropdownItem
+                  id="duplicate-item" key="duplicate-item"
+                  onClick={() => spawnDuplicateItem("/" + path.join("/") + "/", selected.name)}
+                >
+                    {cockpit.format(_("Duplicate $0"), selected.type || "directory")}
                 </DropdownItem>}
                 <DropdownItem
                   id="create-link" key="create-link"

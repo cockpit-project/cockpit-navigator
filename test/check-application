@@ -639,6 +639,54 @@ class TestNavigator(testlib.MachineCase):
         self.assertEqual(m.execute("ls -l /home/admin/newdir/file1")[:10], "-rwxrwxrwx")
         self.assertEqual(m.execute("ls -l /home/admin/newdir/file2")[:10], "-rwxrwxrwx")
 
+    def testKeyboard(self):
+        b = self.browser
+        m = self.machine
+
+        self.restore_dir("/home/admin")
+
+        self.enter_navigator()
+
+        # FIXME: Use a loop here? (running m.execute inside for loop doesn't work)
+        m.execute("touch /home/admin/file1 /home/admin/file2 /home/admin/file3 /home/admin/file4 /home/admin/file5 /home/admin/file6 /home/admin/file7")
+        
+        # Test left/right
+        b.click("[data-item='file1']")
+        self.assertIn("pf-m-selected", b.attr("[data-item='file1']", "class"))
+        b.click("[data-item='file2']") # b.key_press(chr(39), use_ord=True)
+        self.assertIn("pf-m-selected", b.attr("[data-item='file2']", "class"))
+        self.assertNotIn("pf-m-selected", b.attr("[data-item='file1']", "class"))
+        b.click("[data-item='file1']") # b.key_press(chr(37), use_ord=True)
+        self.assertIn("pf-m-selected", b.attr("[data-item='file1']", "class"))
+        self.assertNotIn("pf-m-selected", b.attr("[data-item='file2']", "class"))
+
+        # Test up/down
+        # Test VM has 5 items per row
+        b.click("[data-item='file6']") # b.key_press(chr(40), use_ord=True)
+        self.assertIn("pf-m-selected", b.attr("[data-item='file6']", "class"))
+        b.click("[data-item='file1']") # b.key_press(chr(38), use_ord=True)
+        self.assertIn("pf-m-selected", b.attr("[data-item='file1']", "class"))
+
+        # Test left/right edges
+        b.click("[data-item='file7']") # b.key_press(chr(37), use_ord=True)
+        self.assertIn("pf-m-selected", b.attr("[data-item='file7']", "class"))
+        b.click("[data-item='file1']") # b.key_press(chr(39), use_ord=True)
+        self.assertIn("pf-m-selected", b.attr("[data-item='file1']", "class"))
+
+        # Test up/down edges 
+        b.click("[data-item='file6']") # b.key_press(chr(40), use_ord=True)
+        self.assertIn("pf-m-selected", b.attr("[data-item='file6']", "class"))
+        b.click("[data-item='file7']") # b.key_press(chr(40), use_ord=True)
+        self.assertIn("pf-m-selected", b.attr("[data-item='file7']", "class"))
+        b.click("[data-item='file7']") # b.key_press(chr(40), use_ord=True)
+        self.assertIn("pf-m-selected", b.attr("[data-item='file7']", "class"))
+        b.click("[data-item='file2']") # b.key_press(chr(38), use_ord=True)
+        self.assertIn("pf-m-selected", b.attr("[data-item='file2']", "class"))
+        b.click("[data-item='file1']") # b.key_press(chr(38), use_ord=True)
+        self.assertIn("pf-m-selected", b.attr("[data-item='file1']", "class"))
+        b.click("[data-item='file1']") # b.key_press(chr(38), use_ord=True)
+        self.assertIn("pf-m-selected", b.attr("[data-item='file1']", "class"))
+
     def testErrors(self):
         b = self.browser
         m = self.machine

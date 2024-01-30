@@ -231,25 +231,50 @@ export const Application = () => {
                     : selected.length > 1 && selected.includes(selectedContext)
                     // eslint-disable-next-line max-len
                         ? [{ title: _("Copy"), onClick: _copyItem }, { title: _("Delete"), onClick: _deleteItem, className: "pf-m-danger" }]
-                        : [
-                            { title: _("Copy"), onClick: _copyItem },
-                            ...(selectedContext.type === "directory")
-                                ? [
-                                    {
-                                        title: _("Paste into directory"),
-                                        onClick: () => _pasteItem([...path, selectedContext.name], false),
-                                        isDisabled: clipboard === undefined
-                                    }
-                                ]
-                                : [],
-                            { type: "divider" },
-                            { title: _("Edit properties"), onClick: _editProperties },
-                            { title: _("Rename"), onClick: _renameItem },
-                            { type: "divider" },
-                            { title: _("Create link"), onClick: _createLink },
-                            { type: "divider" },
-                            { title: cockpit.format(_("Delete")), onClick: _deleteItem, className: "pf-m-danger" },
-                        ])
+                        : superuser.allowed
+                            ? [
+                                { title: cockpit.format(_("Copy $0"), selectedContext.type), onClick: _copyItem },
+                                ...(selectedContext.type === "directory")
+                                    ? [
+                                        {
+                                            title: _("Paste into directory"),
+                                            onClick: () => _pasteItem([...path, selectedContext.name], false),
+                                            isDisabled: clipboard === undefined
+                                        }
+                                    ]
+                                    : [],
+                                { type: "divider" },
+                                { title: _("Edit properties"), onClick: _editProperties },
+                                { title: cockpit.format(_("Rename $0"), selectedContext?.type), onClick: _renameItem },
+                                { type: "divider" },
+
+                                { title: _("Create link"), onClick: _createLink },
+                                { type: "divider" },
+                                {
+                                    title: cockpit.format(_("Delete $0"), selectedContext?.type),
+                                    onClick: _deleteItem,
+                                    className: "pf-m-danger"
+                                }
+                            ]
+                            : [
+                                { title: _("Copy"), onClick: _copyItem },
+                                ...(selectedContext.type === "directory")
+                                    ? [
+                                        {
+                                            title: _("Paste into directory"),
+                                            onClick: () => _pasteItem([...path, selectedContext.name], false),
+                                            isDisabled: clipboard === undefined
+                                        }
+                                    ]
+                                    : [],
+                                { type: "divider" },
+                                { title: _("Edit properties"), onClick: _editProperties },
+                                { title: _("Rename"), onClick: _renameItem },
+                                { type: "divider" },
+                                { title: _("Create link"), onClick: _createLink },
+                                { type: "divider" },
+                                { title: cockpit.format(_("Delete")), onClick: _deleteItem, className: "pf-m-danger" },
+                            ])
                         .map((item, i) => item.type !== "divider"
                             ? (
                                 <MenuItem

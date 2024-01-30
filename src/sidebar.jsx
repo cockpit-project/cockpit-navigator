@@ -126,7 +126,7 @@ export const SidebarPanelDetails = ({
     currentDirectory,
     clipboard,
     setClipboard,
-    addAlert
+    addAlert,
 }) => {
     const [info, setInfo] = useState(null);
 
@@ -212,9 +212,9 @@ const DropdownWithKebab = ({
     setHistory,
     setHistoryIndex,
     files,
+    setSelected,
     clipboard,
     setClipboard,
-    setSelected,
     currentDirectory,
     addAlert
 }) => {
@@ -259,6 +259,20 @@ const DropdownWithKebab = ({
             title: _("Copy full path")
         },
         { type: "divider" },
+        ...(selected.length === 1 && selected[0].isText)
+            ? [
+                {
+                    id: "edit-item",
+                    onClick: () => {
+                        cockpit.location.go("/", {
+                            path: encodeURIComponent(path.join("/")),
+                            edit: selected[0].name
+                        });
+                    },
+                    title: _("Edit file")
+                }
+            ]
+            : [],
         ...selected.length === 1
             ? [
                 {

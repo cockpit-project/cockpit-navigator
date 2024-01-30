@@ -18,11 +18,14 @@
  */
 import cockpit from "cockpit";
 import React from "react";
+import { usePageLocation } from "hooks.js";
 
 import { Button, Flex, FlexItem, PageBreadcrumb } from "@patternfly/react-core";
 import { ArrowLeftIcon, ArrowRightIcon } from "@patternfly/react-icons";
 
 export const NavigatorBreadcrumbs = ({ currentDir, path, history, setHistory, historyIndex, setHistoryIndex }) => {
+    const { options } = usePageLocation();
+    const isEditing = options.edit !== undefined;
     const navigateBack = () => {
         if (historyIndex > 0) {
             cockpit.location.go("/", { path: encodeURIComponent(history[historyIndex - 1].join("/")) });
@@ -46,22 +49,25 @@ export const NavigatorBreadcrumbs = ({ currentDir, path, history, setHistory, hi
     return (
         <PageBreadcrumb stickyOnBreakpoint={{ default: "top" }}>
             <Flex>
-                <FlexItem>
-                    <Button
-                      variant="secondary" onClick={navigateBack}
-                      isDisabled={historyIndex === 0} id="navigate-back"
-                    >
-                        <ArrowLeftIcon />
-                    </Button>
-                </FlexItem>
-                <FlexItem>
-                    <Button
-                      variant="secondary" onClick={navigateForward}
-                      isDisabled={history.length === historyIndex + 1} id="navigate-forward"
-                    >
-                        <ArrowRightIcon />
-                    </Button>
-                </FlexItem>
+                {!isEditing &&
+                <>
+                    <FlexItem>
+                        <Button
+                          variant="secondary" onClick={navigateBack}
+                          isDisabled={historyIndex === 0} id="navigate-back"
+                        >
+                            <ArrowLeftIcon />
+                        </Button>
+                    </FlexItem>
+                    <FlexItem>
+                        <Button
+                          variant="secondary" onClick={navigateForward}
+                          isDisabled={history.length === historyIndex + 1} id="navigate-forward"
+                        >
+                            <ArrowRightIcon />
+                        </Button>
+                    </FlexItem>
+                </>}
                 <FlexItem>
                     <Flex spaceItems={{ default: "spaceItemsXs" }}>
                         {path.map((dir, i) => {

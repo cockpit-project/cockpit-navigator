@@ -20,12 +20,15 @@
 
 import React from "react";
 import { Menu, MenuContent } from "@patternfly/react-core";
+import { usePageLocation } from "hooks.js";
 
 import "./contextMenu.scss";
 
 export const ContextMenu = ({ parentId, contextMenuItems, setSelectedContext }) => {
     const [visible, setVisible] = React.useState(false);
     const [event, setEvent] = React.useState(null);
+    const { options } = usePageLocation();
+    const isEditing = options.edit !== undefined;
     const root = React.useRef(null);
 
     React.useEffect(() => {
@@ -45,16 +48,19 @@ export const ContextMenu = ({ parentId, contextMenuItems, setSelectedContext }) 
                 }
             }
         };
+        if (!isEditing) {
+            const parent = document.getElementById(parentId);
+            parent.addEventListener("contextmenu", _handleContextMenu);
+            document.addEventListener("click", _handleClick);
 
-        const parent = document.getElementById(parentId);
-        parent.addEventListener("contextmenu", _handleContextMenu);
-        document.addEventListener("click", _handleClick);
-
-        return () => {
-            parent.removeEventListener("contextmenu", _handleContextMenu);
-            document.removeEventListener("click", _handleClick);
-        };
-    }, [parentId, setSelectedContext]);
+            return () => {
+                parent.removeEventListener("contextmenu", _handleContextMenu);
+                document.removeEventListener("click", _handleClick);
+            };
+        } else {
+            setVisible(false);
+        }
+    }, [parentId, setSelectedContext, isEditing]);
 
     React.useEffect(() => {
         if (!event)

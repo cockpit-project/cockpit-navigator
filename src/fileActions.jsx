@@ -52,6 +52,12 @@ import { permissions, inode_types } from "./common";
 
 const _ = cockpit.gettext;
 
+export const onBeforeUnload = event => {
+    event.preventDefault();
+    event.returnValue = "";
+    return "";
+};
+
 export const createDirectory = (Dialogs, currentPath, selected) => {
     Dialogs.show(<CreateDirectoryModal currentPath={currentPath} selected={selected} />);
 };
@@ -591,15 +597,22 @@ export const updateFile = (file, currentPath) => {
                 file.group = res[2];
                 file.owner = res[3];
                 file.size = res[4];
-                if (file.type === "link")
-                    return cockpit.spawn(["ls", "-lF", filePath], { superuser: "try" })
-                            .then(res => {
-                                file.to = res.slice(-2, -1) === "/"
-                                    ? "directory"
-                                    : "file";
+                return cockpit.spawn(["file", "--mime", filePath], { superuser: "try" })
+                        .then(res => {
+                            // FIXME: a filename containing these two characters could cause bugs
+                            const fileType = res.slice(res.indexOf(":") + 2, res.indexOf(";"));
+                            // file --mime returns inode/x-empty for empty files
+                            file.isText = fileType.includes("text") || fileType.includes("inode/x-empty");
+                            if (file.type === "link")
+                                return cockpit.spawn(["ls", "-lF", filePath], { superuser: "try" })
+                                        .then(res => {
+                                            file.to = res.slice(-2, -1) === "/"
+                                                ? "directory"
+                                                : "file";
+                                            return file;
+                                        });
+                            else
                                 return file;
-                            });
-                else
-                    return file;
+                        });
             }, exc => console.error(`Adding file ${file} failed: ${exc.toString()}`));
 };

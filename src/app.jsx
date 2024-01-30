@@ -38,11 +38,12 @@ import { EmptyStatePanel } from "cockpit-components-empty-state.jsx";
 import { ContextMenu } from "./navigatorContextMenu.jsx";
 import { NavigatorBreadcrumbs } from "./navigatorBreadcrumbs.jsx";
 import {
-    copyItem, createDirectory, createLink, deleteItem, editPermissions, pasteItem, renameItem, updateFile
+    createDirectory, createLink, deleteItem, editPermissions, renameItem, updateFile, copyItem, pasteItem
 } from "./fileActions.jsx";
 import { SidebarPanelDetails } from "./sidebar.jsx";
 import { NavigatorCardHeader } from "./header.jsx";
 import { usePageLocation } from "hooks.js";
+import { FileEditor } from "./FileEditor.jsx";
 
 const _ = cockpit.gettext;
 
@@ -209,6 +210,10 @@ export const Application = () => {
 
     const addAlert = (title, variant, key) => setAlerts(prevAlerts => [...prevAlerts, { title, variant, key }]);
     const removeAlert = (key) => setAlerts(prevAlerts => [...prevAlerts.filter(alert => alert.key !== key)]);
+    const _setIsEditing = () => {
+        setSelected([selectedContext]);
+        cockpit.location.go("/", { path: encodeURIComponent(path.join("/")), edit: selectedContext.name });
+    };
 
     const contextMenuItems = (
         <MenuList>
@@ -232,6 +237,9 @@ export const Application = () => {
                     // eslint-disable-next-line max-len
                         ? [{ title: _("Copy"), onClick: _copyItem }, { title: _("Delete"), onClick: _deleteItem, className: "pf-m-danger" }]
                         : [
+                            ...(selectedContext.type !== "directory" && selectedContext.isText)
+                                ? [{ title: _("Edit file"), onClick: _setIsEditing }]
+                                : [],
                             { title: _("Copy"), onClick: _copyItem },
                             ...(selectedContext.type === "directory")
                                 ? [
@@ -404,6 +412,8 @@ const NavigatorCardBody = ({
 }) => {
     const [boxPerRow, setBoxPerRow] = useState(0);
     const Dialogs = useDialogs();
+    const { options } = usePageLocation();
+    const isEditing = options.edit !== undefined;
     const sortedFiles = useMemo(() => {
         const compareFunc = compare(sortBy);
 
@@ -593,23 +603,27 @@ const NavigatorCardBody = ({
                 <Spinner />
             </Flex>
         );
-    if (isGrid) {
-        return (
-            <CardBody onClick={resetSelected} id="navigator-card-body">
-                <Gallery id="folder-view">
-                    {sortedFiles.map(file => <Item file={file} key={file.name} />)}
-                </Gallery>
-            </CardBody>
-        );
+    if (!isEditing) {
+        if (isGrid) {
+            return (
+                <CardBody onClick={resetSelected} id="navigator-card-body">
+                    <Gallery id="folder-view">
+                        {sortedFiles.map(file => <Item file={file} key={file.name} />)}
+                    </Gallery>
+                </CardBody>
+            );
+        } else {
+            return (
+                <ListingTable
+                  id="folder-view"
+                  className="pf-m-no-border-rows"
+                  variant="compact"
+                  columns={[_("Name")]}
+                  rows={sortedFiles.map(file => ({ columns: [{ title: <Item file={file} key={file.name} /> }] }))}
+                />
+            );
+        }
     } else {
-        return (
-            <ListingTable
-              id="folder-view"
-              className="pf-m-no-border-rows"
-              variant="compact"
-              columns={[_("Name")]}
-              rows={sortedFiles.map(file => ({ columns: [{ title: <Item file={file} key={file.name} /> }] }))}
-            />
-        );
+        return (<FileEditor path={path} />);
     }
 };

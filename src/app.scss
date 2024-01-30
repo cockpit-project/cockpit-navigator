@@ -157,3 +157,12 @@
 .pf-v5-c-modal-box__title, .pf-v5-c-modal-box__title-text {
     white-space: break-spaces;
 }
+
+// FIXME: don't use fixed values here
+#text-editor-card {
+    height: 75vh;
+}
+
+#text-editor {
+    height: 65vh;
+}

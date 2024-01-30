@@ -449,14 +449,14 @@ class TestNavigator(testlib.MachineCase):
         # Check file name is pre-selected when creating link
         m.execute("touch /home/admin/newfile")
         b.mouse("[data-item='newfile']", "contextmenu")
-        b.wait_in_text(".context-menu li:nth-child(6) button", "Create link")
+        b.wait_in_text(".context-menu li:nth-child(7) button", "Create link")
         b.click(".context-menu button:contains('Create link')")
         b.wait_val("#create-link-original-wrapper input", "/home/admin/newfile")
         b.click("button.pf-m-link:contains('Cancel')")
 
         # Delete button text should match item type: directory/file
         b.mouse("[data-item='newfile']", "contextmenu")
-        b.wait_in_text(".context-menu li:nth-child(8) button", "Delete")
+        b.wait_in_text(".context-menu li:nth-child(9) button", "Delete")
         b.click(".context-menu button:contains('Delete')")
         b.click("button.pf-m-danger")
         b.wait_not_present("[data-item='newfile']")
@@ -757,6 +757,52 @@ class TestNavigator(testlib.MachineCase):
         b.click(".breadcrumb-button:nth-of-type(3)")
         m.execute("chattr -i /home/admin/locked")
 
+    def testFileEditor(self):
+        b = self.browser
+        m = self.machine
+
+        self.enter_navigator()
+
+        # Edit file
+        m.execute("touch /home/admin/newfile")
+        b.click("[data-item='newfile']")
+        b.click("#dropdown-menu")
+        b.click("#edit-item")
+        b.wait_text("#navigator-card-header", "newfile")
+        b.wait_visible("textarea#text-editor")
+        b.focus("textarea#text-editor")
+        b.key_press("test_string")
+        b.click("button.pf-m-primary")
+        self.assertEqual(m.execute("head -n 1 /home/admin/newfile"), "test_string")
+
+        # Cancel editing
+        b.click("[data-item='newfile']")
+        b.click("#dropdown-menu")
+        b.click("#edit-item")
+        b.wait_visible("textarea#text-editor")
+        b.focus("textarea#text-editor")
+        b.key_press("edit")
+        b.click("button.pf-m-danger")
+        self.assertEqual(m.execute("head -n 1 /home/admin/newfile"), "test_string")
+
+        # Only text files should be editable
+        m.execute("zip /home/admin/test.zip /home/admin/newfile")
+        b.click("[data-item='test.zip']")
+        b.click("#dropdown-menu")
+        b.wait_not_present("#edit-item")
+        m.execute("mkdir /home/admin/newdir")
+        b.click("[data-item='newdir']")
+        b.click("#dropdown-menu")
+        b.wait_not_present("#edit-item")
+
+        # Clicking breadcrumbs should close editor
+        b.click("[data-item='newfile']")
+        b.click("#dropdown-menu")
+        b.click("#edit-item")
+        b.wait_visible("textarea#text-editor")
+        b.click(".breadcrumb-button:nth-of-type(2)")
+        b.wait_not_present("textarea#text-editor")
+        b.wait_visible("[data-item='admin']")
 
 if __name__ == '__main__':
     testlib.test_main()

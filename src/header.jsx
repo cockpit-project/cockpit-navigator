@@ -19,6 +19,7 @@
 
 import cockpit from "cockpit";
 import React, { useState } from "react";
+import { usePageLocation } from "hooks.js";
 
 import {
     CardHeader,
@@ -38,16 +39,24 @@ import { GripVerticalIcon, ListIcon } from "@patternfly/react-icons";
 
 const _ = cockpit.gettext;
 
-export const NavigatorCardHeader = ({ currentFilter, onFilterChange, isGrid, setIsGrid, sortBy, setSortBy }) => {
+export const NavigatorCardHeader = ({
+    currentFilter, onFilterChange, isGrid, setIsGrid, sortBy, setSortBy
+}) => {
+    const { options } = usePageLocation();
+    const isEditing = options.edit !== undefined;
+    const editorFile = options.edit;
     return (
         <CardHeader className="card-actionbar">
             <CardTitle component="h2" id="navigator-card-header">
                 <TextContent>
                     <Text component={TextVariants.h2}>
-                        {_("Directories & files")}
+                        {isEditing
+                            ? editorFile
+                            : _("Directories & files")}
                     </Text>
                 </TextContent>
             </CardTitle>
+            {!isEditing &&
             <Flex flexWrap={{ default: "nowrap" }} alignItems={{ default: "alignItemsCenter" }}>
                 <SearchInput
                   placeholder={_("Filter directory")} value={currentFilter}
@@ -57,7 +66,7 @@ export const NavigatorCardHeader = ({ currentFilter, onFilterChange, isGrid, set
                   isGrid={isGrid} setIsGrid={setIsGrid}
                   setSortBy={setSortBy} sortBy={sortBy}
                 />
-            </Flex>
+            </Flex>}
         </CardHeader>
     );
 };

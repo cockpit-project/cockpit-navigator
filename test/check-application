@@ -73,6 +73,18 @@ class TestNavigator(testlib.MachineCase):
         b.click(f"#create-link-{filetype}")
         b.click("button.pf-m-primary")
 
+    def waitDownloadFile(self, filename, expected_size=None, content=None):
+        b = self.browser
+        filepath = os.path.join(b.cdp.download_dir, filename)
+
+        testlib.wait(lambda: os.path.exists(filepath))
+        if expected_size is not None:
+            testlib.wait(lambda: os.stat(filepath).st_size == expected_size)
+
+        if content is not None:
+            with open(filepath) as fp:
+                self.assertEqual(fp.read(), content)
+
     def testBasic(self):
         b = self.browser
         m = self.machine
@@ -404,6 +416,7 @@ class TestNavigator(testlib.MachineCase):
         m = self.machine
 
         self.enter_navigator()
+        b.allow_download()
 
         # Create folder from context menu
         b.mouse("#folder-view", "contextmenu")
@@ -448,16 +461,28 @@ class TestNavigator(testlib.MachineCase):
         b.wait_not_present("[data-item='newdir1']")
 
         # Check file name is pre-selected when creating link
-        m.execute("touch /home/admin/newfile")
+        m.execute("echo 'some content' > /home/admin/newfile")
         b.mouse("[data-item='newfile']", "contextmenu")
         b.wait_in_text(".context-menu li:nth-child(6) button", "Create link")
         b.click(".context-menu button:contains('Create link')")
         b.wait_val("#create-link-original-wrapper input", "/home/admin/newfile")
         b.click("button.pf-m-link:contains('Cancel')")
 
+        b.mouse("[data-item='newfile']", "contextmenu")
+        b.wait_in_text(".context-menu li:nth-child(8) button", "Download")
+        b.click(".context-menu button:contains('Download')")
+        size = int(m.execute("stat --format '%s' /home/admin/newfile").strip())
+        self.waitDownloadFile("newfile", size, "some content\n")
+
+        # Big file downloads fine
+        m.execute("truncate -s 1500M /home/admin/test.iso")
+        b.mouse("[data-item='test.iso']", "contextmenu")
+        b.click(".context-menu button:contains('Download')")
+        self.waitDownloadFile("test.iso", 1500 * 1024 * 1024)
+
         # Delete button text should match item type: directory/file
         b.mouse("[data-item='newfile']", "contextmenu")
-        b.wait_in_text(".context-menu li:nth-child(8) button", "Delete")
+        b.wait_in_text(".context-menu li:nth-child(10) button", "Delete")
         b.click(".context-menu button:contains('Delete')")
         b.click("button.pf-m-danger")
         b.wait_not_present("[data-item='newfile']")

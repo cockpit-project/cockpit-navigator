@@ -546,3 +546,19 @@ export const EditPermissionsModal = ({ selected, path }) => {
         </Modal>
     );
 };
+
+export const downloadFile = (currentPath, selected) => {
+    const query = window.btoa(JSON.stringify({
+        payload: "fsread1",
+        binary: "raw",
+        path: `${currentPath}/${selected.name}`,
+        superuser: "try",
+        external: {
+            "content-disposition": `attachment; filename="${selected.name}"`,
+            "content-type": "application/octet-stream",
+        }
+    }));
+
+    const prefix = (new URL(cockpit.transport.uri("channel/" + cockpit.transport.csrf_token))).pathname;
+    window.open(`${prefix}?${query}`, '_blank');
+};

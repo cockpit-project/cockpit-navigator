@@ -35,7 +35,7 @@ import { ContextMenu } from "./context-menu.jsx";
 import { NavigatorBreadcrumbs } from "./navigatorBreadcrumbs.jsx";
 import { NavigatorCardBody } from "./navigator-card-body.jsx";
 import {
-    copyItem, createDirectory, createLink, deleteItem, editPermissions, pasteItem, renameItem
+    copyItem, createDirectory, createLink, deleteItem, editPermissions, pasteItem, renameItem, downloadFile
 } from "./fileActions.jsx";
 import { SidebarPanelDetails } from "./sidebar.jsx";
 import { NavigatorCardHeader } from "./header.jsx";
@@ -64,6 +64,7 @@ export const Application = () => {
     const [historyIndex, setHistoryIndex] = useState(0);
     const [clipboard, setClipboard] = useState(undefined);
     const [alerts, setAlerts] = useState([]);
+    const [user, setUser] = useState(null);
 
     const onFilterChange = (_, value) => setCurrentFilter(value);
     const currentPath = decodeURIComponent(options.path || "");
@@ -77,6 +78,7 @@ export const Application = () => {
 
     useEffect(() => {
         cockpit.user().then(user => {
+            setUser(user);
             const userPath = user.home.split("/");
             setHistory(h => [...h, userPath]);
 
@@ -122,6 +124,7 @@ export const Application = () => {
 
     const _createDirectory = () => createDirectory(Dialogs, currentDir, selectedContext || selected);
     const _createLink = () => createLink(Dialogs, currentDir, files, selectedContext);
+    const _downloadFile = () => downloadFile(currentDir, selectedContext);
     const _copyItem = () => {
         copyItem(setClipboard, selected.length > 1
             ? selected.map(s => currentDir + s.name)
@@ -184,6 +187,17 @@ export const Application = () => {
                             { title: _("Rename"), onClick: _renameItem },
                             { type: "divider" },
                             { title: _("Create link"), onClick: _createLink },
+                            ...(selectedContext?.type === "reg")
+                                ? [
+                                    {
+                                        type: "divider"
+                                    },
+                                    {
+                                        title: _("Download"),
+                                        onClick: _downloadFile
+                                    },
+                                ]
+                                : [],
                             { type: "divider" },
                             { title: cockpit.format(_("Delete")), onClick: _deleteItem, className: "pf-m-danger" },
                         ])
@@ -258,6 +272,7 @@ export const Application = () => {
                     </SidebarContent>
                     <SidebarPanel className="sidebar-panel" width={{ default: "width_25" }}>
                         <SidebarPanelDetails
+                          user={user}
                           path={path}
                           selected={selected.map(s => files.find(f => f.name === s.name)).filter(s => s !== undefined)}
                           currentDirectory={

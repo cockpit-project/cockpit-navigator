@@ -53,7 +53,8 @@ import * as timeformat from "timeformat";
 import { useDialogs } from "dialogs.jsx";
 
 import {
-    copyItem, createDirectory, createLink, deleteItem, editPermissions, pasteItem, renameItem
+    copyItem, createDirectory, createLink, deleteItem, editPermissions, pasteItem, renameItem,
+    downloadFile,
 } from "./fileActions.jsx";
 import { get_permissions } from "./common";
 
@@ -122,7 +123,8 @@ export const SidebarPanelDetails = ({
     currentDirectory,
     clipboard,
     setClipboard,
-    addAlert
+    addAlert,
+    user,
 }) => {
     const [info, setInfo] = useState(null);
 
@@ -174,6 +176,7 @@ export const SidebarPanelDetails = ({
                   clipboard={clipboard} setClipboard={setClipboard}
                   setSelected={setSelected} currentDirectory={currentDirectory}
                   addAlert={addAlert}
+                  user={user}
                 />
             </CardHeader>
             {selected.length === 1 &&
@@ -212,7 +215,8 @@ const DropdownWithKebab = ({
     setClipboard,
     setSelected,
     currentDirectory,
-    addAlert
+    addAlert,
+    user,
 }) => {
     const Dialogs = useDialogs();
     const [isOpen, setIsOpen] = useState(false);
@@ -330,6 +334,17 @@ const DropdownWithKebab = ({
             },
             title: _("Rename")
         },
+        ...(selected.length === 1 && selected[0].type === "reg")
+
+            ? [
+                { type: "divider" },
+                {
+                    id: "download-item",
+                    onClick: () => downloadFile(currentPath, selected[0]),
+                    title: _("Download")
+                }
+            ]
+            : [],
         { type: "divider" },
         {
             id: "delete-item",

@@ -133,6 +133,10 @@
 .sidebar-panel {
     background-color: var(--pf-c-page__main-section--BackgroundColor);
     top: 3rem;
+
+    @media (min-width: 650px) {
+        min-width: 300px;
+    }
 }
 
 #description-list-sidebar {

@@ -25,9 +25,14 @@ import {
     Icon,
     CardTitle, Spinner, CardHeader,
     MenuItem, MenuList,
-    Divider,
+    Divider, Button,
+    EmptyState,
+    EmptyStateHeader,
+    EmptyStateFooter,
+    EmptyStateActions,
+    EmptyStateIcon,
 } from "@patternfly/react-core";
-import { FileIcon, FolderIcon } from "@patternfly/react-icons";
+import { FileIcon, FolderIcon, SearchIcon } from "@patternfly/react-icons";
 
 import cockpit from "cockpit";
 import { useDialogs } from "dialogs.jsx";
@@ -173,6 +178,7 @@ const ContextMenuItems = ({ path, currentDir, selected, setSelected, addAlert, c
 export const NavigatorCardBody = ({
     currentDir,
     currentFilter,
+    setCurrentFilter,
     files,
     isGrid,
     path,
@@ -387,7 +393,24 @@ export const NavigatorCardBody = ({
             />
         </ContextMenu>
     );
-
+    const clearFilter = () => {
+        setCurrentFilter("");
+    };
+    if (sortedFiles.length === 0 && currentFilter !== "") {
+        return (
+            <EmptyState>
+                <EmptyStateHeader
+                  titleText={_("No results found")} headingLevel="h4"
+                  icon={<EmptyStateIcon icon={SearchIcon} />}
+                />
+                <EmptyStateFooter>
+                    <EmptyStateActions>
+                        <Button variant="link" onClick={clearFilter}>Clear search</Button>
+                    </EmptyStateActions>
+                </EmptyStateFooter>
+            </EmptyState>
+        );
+    }
     if (isGrid) {
         return (
             <>

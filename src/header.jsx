@@ -18,9 +18,10 @@
  */
 
 import cockpit from "cockpit";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 
 import {
+    Button,
     CardHeader,
     CardTitle,
     Flex,
@@ -38,7 +39,11 @@ import { GripVerticalIcon, ListIcon } from "@patternfly/react-icons";
 
 const _ = cockpit.gettext;
 
-export const NavigatorCardHeader = ({ currentFilter, onFilterChange, isGrid, setIsGrid, sortBy, setSortBy }) => {
+export const NavigatorCardHeader = ({
+    currentFilter, onFilterChange, isGrid, setIsGrid, sortBy, setSortBy, currentDir, files
+}) => {
+    const [chunksProgress, setChunksProgress] = useState({ number: 0, completed: 0 });
+    const [isUploading, setIsUploading] = useState(false);
     return (
         <CardHeader className="card-actionbar">
             <CardTitle component="h2" id="navigator-card-header">
@@ -57,6 +62,12 @@ export const NavigatorCardHeader = ({ currentFilter, onFilterChange, isGrid, set
                   isGrid={isGrid} setIsGrid={setIsGrid}
                   setSortBy={setSortBy} sortBy={sortBy}
                 />
+                <UploadButton
+                  files={files} setChunksProgress={setChunksProgress}
+                  isUploading={isUploading} setIsUploading={setIsUploading}
+                  currentDir={currentDir}
+                />
+                <UploadProgress chunksProgress={chunksProgress} />
             </Flex>
         </CardHeader>
     );
@@ -113,5 +124,81 @@ const ViewSelector = ({ isGrid, setIsGrid, sortBy, setSortBy }) => {
                 <SelectOption itemId="first_modified">{_("First modified")}</SelectOption>
             </SelectList>
         </Select>
+    );
+};
+
+const UploadButton = ({ files, setChunksProgress, isUploading, setIsUploading, currentDir }) => {
+    const BLOCK_SIZE = 16 * 1024;
+    const ref = useRef();
+
+    const handleClick = () => {
+        ref.current.click();
+    };
+    console.log("files", files);
+
+    const onUpload = event => {
+        setChunksProgress({ completed: 0, number: 0 });
+
+        console.log(event.target.files);
+        for (let fileIndex = 0; fileIndex < event.target.files.length; fileIndex++) {
+            const uploadedFile = event.target.files[fileIndex];
+            console.log(uploadedFile);
+            // TODO: duplicate file names?
+            const fileName = uploadedFile.name;
+
+            const reader = new FileReader();
+            reader.readAsArrayBuffer(uploadedFile);
+            const channel = cockpit.channel({
+                binary: true,
+                payload: "fsreplace1",
+                path: `${currentDir}/${fileName}`,
+                superuser: "try"
+            });
+
+            reader.onprogress = event => {
+                console.log("progress", event);
+                setChunksProgress({ completed: event.total, number: event.loaded });
+            };
+
+            reader.onload = readerEvent => {
+                let len = 0;
+                const content = readerEvent.target.result;
+                console.log(content);
+                len = content.byteLength;
+
+                for (let i = 0; i < len; i += BLOCK_SIZE) {
+                    const n = Math.min(len - i, BLOCK_SIZE);
+                    channel.send(new window.Uint8Array(content, i, n));
+                }
+            };
+
+            reader.onloadend = event => {
+                // TODO: check for errors?
+                console.log("loadend", event);
+                channel.control({ command: "done" });
+                setChunksProgress({ completed: 100, number: 100 });
+            };
+        }
+    };
+
+    return (
+        <>
+            <Button variant="secondary" onClick={handleClick}>Upload</Button>
+            <input
+              ref={ref} type="file"
+              hidden onChange={onUpload}
+            />
+        </>
+    );
+};
+
+const UploadProgress = ({ chunksProgress }) => {
+    const progress = Math.round(100 * (chunksProgress.number / chunksProgress.completed));
+    console.log("progress", progress);
+    return (
+        <div
+          id="progress" className="progress-pie"
+          title={`Upload ${progress}% completed`} style={{ "--progress": `${progress}%` }}
+        />
     );
 };

@@ -156,3 +156,14 @@
 .pf-v5-c-modal-box__title, .pf-v5-c-modal-box__title-text {
     white-space: break-spaces;
 }
+
+.progress-pie {
+    --progress-fill: grey;
+    --progress-empty: lightgrey;
+    aspect-ratio: 1 / 1;
+    border-radius: 100%;
+    display: inline-block;
+    height: 100%;
+    min-height: 16px;
+    background: conic-gradient(var(--progress-fill) var(--progress, 0), var(--progress-empty) var(--progress, 0));
+}

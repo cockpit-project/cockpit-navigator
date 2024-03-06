@@ -36,15 +36,18 @@ class TestNavigator(testlib.MachineCase):
     def last_breadcrumb_sel(self):
         return ".pf-v5-c-page__main-breadcrumb > div > button:last-of-type"
 
-    def delete_item(self, b, filetype, filename, expect_success=True):
-        b.click(f"[data-item='{filename}']")
-        b.click("#dropdown-menu")
-        b.click("#delete-item")
+    def confirm_deletion_dialog(self, b, filetype, filename, expect_success=True):
         b.wait_in_text("h1.pf-v5-c-modal-box__title", f"Delete {filetype} {filename}?")
         b.click("button.pf-m-danger")
         if expect_success:
             b.wait_not_present(".pf-v5-c-modal-box")
             b.wait_not_present(f"[data-item='{filename}']")
+
+    def delete_item(self, b, filetype, filename, expect_success=True):
+        b.click(f"[data-item='{filename}']")
+        b.click("#dropdown-menu")
+        b.click("#delete-item")
+        self.confirm_deletion_dialog(b, filetype, filename, expect_success)
 
     def create_directory(self, b, filename):
         b.click("#dropdown-menu")
@@ -329,6 +332,16 @@ class TestNavigator(testlib.MachineCase):
         b.wait_visible("[data-item='newfile']")
         m.execute("sudo chattr -i /home/admin/newfile")
         self.delete_item(b, "file", "newfile")
+
+        # Check 'Delete' key
+        m.execute("touch /home/admin/newfile")
+        b.wait_visible("[data-item='newfile']")
+        b.click("[data-item='newfile']")
+        # HACK: the current implementation of `key_press()` is based on undocumented behavior of passing unicode
+        # equivalent of control characters, which firefox doesn't respect. For now, directly invoke the cdp method
+        # and explicitly pass the key name.
+        b.cdp.invoke("Input.dispatchKeyEvent", type="keyDown", key="Delete")
+        self.confirm_deletion_dialog(b, "file", "newfile")
 
     def testCreate(self):
         b = self.browser

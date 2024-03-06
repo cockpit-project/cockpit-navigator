@@ -264,6 +264,19 @@ export const NavigatorCardBody = ({
                 });
             } else if (e.key === "Enter" && selected.length === 1) {
                 onDoubleClickNavigate(selected[0]);
+            } else if (e.key === "Delete") {
+                if (selected.length !== 0) {
+                    const currentDir = path.join("/") + "/";
+                    deleteItem(
+                        Dialogs,
+                        {
+                            selected,
+                            itemPath: currentDir + selected[0].name,
+                            path: currentDir,
+                            setSelected,
+                        }
+                    );
+                }
             }
         };
 
@@ -283,7 +296,8 @@ export const NavigatorCardBody = ({
         boxPerRow,
         selected,
         onDoubleClickNavigate,
-        Dialogs
+        Dialogs,
+        path
     ]);
 
     const resetSelected = e => {
